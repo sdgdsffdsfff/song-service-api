@@ -26,23 +26,30 @@ public class ClientAccount {
 
 	private static final String UTF8 = "utf-8";
 
-	private static ClientAccount instance;
+	private static ClientAccount mInstance;
 
 	private String uri;
 	private String appKey;
 	private String appSecret;
 
-	private ClientAccount(Config config) {
-		this.uri = config.getAccountApi();
-		this.appKey = config.getAppKey();
-		this.appSecret = config.getAppSecret();
+	public static ClientAccount getInstance() {
+		if (mInstance == null) {
+			mInstance = new ClientAccount();
+		}
+		if (mInstance.uri == null || mInstance.appKey == null
+				|| mInstance.appSecret == null) {
+			throw new IllegalArgumentException("初始化参数错误");
+		}
+		return mInstance;
 	}
 
-	public static ClientAccount getInstance(Config config) {
-		if (instance == null) {
-			instance = new ClientAccount(config);
+	public static void init(String appKey, String appSecret, String uri) {
+		if (mInstance == null) {
+			mInstance = new ClientAccount();
 		}
-		return instance;
+		mInstance.uri = uri;
+		mInstance.appKey = appKey;
+		mInstance.appSecret = appSecret;
 	}
 
 	public User getUserById(long userId) throws MalformedURLException,
@@ -139,14 +146,39 @@ public class ClientAccount {
 		return u;
 	}
 
-	public StringResult createClientSession(String appKey, String appSecret)
-			throws MalformedURLException, ProtocolException, IOException,
-			ApiException {
+	public StringResult createClientSession() throws MalformedURLException,
+			ProtocolException, IOException, ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
 				appSecret, uri + "/ssoAuth/createClientSession."
 						+ FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
+		HttpUtil.setBodyParameter(sb, conn);
+
+		SdkHttpResult shr = HttpUtil.returnResult(conn);
+		if (shr.getHttpCode() != 200) {
+			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
+		}
+		StringResult sr = (StringResult) GsonUtil.fromJson(shr.getResult(),
+				StringResult.class);
+		if (sr != null && sr.getErrCode() != null) {
+			throw new ApiException(sr.getErrCode(), sr.getErrDesc(),
+					sr.getErrNotice());
+		}
+		return sr;
+	}
+
+	public StringResult isClientSessionId(String sessionId)
+			throws MalformedURLException, ProtocolException, IOException,
+			ApiException {
+		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
+				appSecret, uri + "/ssoAuth/isClientSessionId."
+						+ FormatType.json);
+
+		StringBuilder sb = new StringBuilder();
+		if (sessionId != null) {
+			sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
+		}
 		HttpUtil.setBodyParameter(sb, conn);
 
 		SdkHttpResult shr = HttpUtil.returnResult(conn);
@@ -203,6 +235,7 @@ public class ClientAccount {
 
 	/**
 	 * 退出
+	 * 
 	 * @param sessionId
 	 * @return
 	 * @throws MalformedURLException
@@ -236,6 +269,7 @@ public class ClientAccount {
 
 	/**
 	 * 获取融云TOKEN
+	 * 
 	 * @param sessionId
 	 * @param resAccountUri
 	 * @return
@@ -273,6 +307,7 @@ public class ClientAccount {
 
 	/**
 	 * 获取好友列表
+	 * 
 	 * @param sessionId
 	 * @return
 	 * @throws MalformedURLException
@@ -303,7 +338,7 @@ public class ClientAccount {
 		}
 		return rt;
 	}
-	
+
 	public FriendApply getFriendApplyById(String sessionId, long fayId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
@@ -328,13 +363,12 @@ public class ClientAccount {
 		}
 		return rt;
 	}
-	
-	public FriendApply sendFriendApply(String sessionId, long toUserId, String reason)
-			throws MalformedURLException, ProtocolException, IOException,
-			ApiException {
+
+	public FriendApply sendFriendApply(String sessionId, long toUserId,
+			String reason) throws MalformedURLException, ProtocolException,
+			IOException, ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
-				appSecret, uri + "/friend/sendFriendApply."
-						+ FormatType.json);
+				appSecret, uri + "/friend/sendFriendApply." + FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
@@ -354,13 +388,12 @@ public class ClientAccount {
 		}
 		return rt;
 	}
-	
+
 	public Result agreeFriendApply(String sessionId, long fayId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
-				appSecret, uri + "/friend/agreeFriendApply."
-						+ FormatType.json);
+				appSecret, uri + "/friend/agreeFriendApply." + FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
@@ -371,15 +404,14 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		Result rt = (Result) GsonUtil.fromJson(shr.getResult(),
-				Result.class);
+		Result rt = (Result) GsonUtil.fromJson(shr.getResult(), Result.class);
 		if (rt != null && rt.getErrCode() != null) {
 			throw new ApiException(rt.getErrCode(), rt.getErrDesc(),
 					rt.getErrNotice());
 		}
 		return rt;
 	}
-	
+
 	public Result delFriendApplyById(String sessionId, long fayId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
@@ -396,15 +428,14 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		Result rt = (Result) GsonUtil.fromJson(shr.getResult(),
-				Result.class);
+		Result rt = (Result) GsonUtil.fromJson(shr.getResult(), Result.class);
 		if (rt != null && rt.getErrCode() != null) {
 			throw new ApiException(rt.getErrCode(), rt.getErrDesc(),
 					rt.getErrNotice());
 		}
 		return rt;
 	}
-	
+
 	public FriendApplyItems getFriendApplyList(String sessionId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
@@ -420,15 +451,15 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		FriendApplyItems rt = (FriendApplyItems) GsonUtil.fromJson(shr.getResult(),
-				FriendApplyItems.class);
+		FriendApplyItems rt = (FriendApplyItems) GsonUtil.fromJson(
+				shr.getResult(), FriendApplyItems.class);
 		if (rt != null && rt.getErrCode() != null) {
 			throw new ApiException(rt.getErrCode(), rt.getErrDesc(),
 					rt.getErrNotice());
 		}
 		return rt;
 	}
-	
+
 	public FriendApply getFriendApplyBoth(String sessionId, long toUserId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
@@ -453,13 +484,13 @@ public class ClientAccount {
 		}
 		return rt;
 	}
-	
-	public FriendMessage sendFriendMessage(String sessionId, long fayId, long toUserId, String message)
-			throws MalformedURLException, ProtocolException, IOException,
-			ApiException {
-		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
-				appSecret, uri + "/friend/sendFriendMessage."
-						+ FormatType.json);
+
+	public FriendMessage sendFriendMessage(String sessionId, long fayId,
+			long toUserId, String message) throws MalformedURLException,
+			ProtocolException, IOException, ApiException {
+		HttpURLConnection conn = HttpUtil
+				.CreatePostHttpConnection(appKey, appSecret, uri
+						+ "/friend/sendFriendMessage." + FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
@@ -480,10 +511,10 @@ public class ClientAccount {
 		}
 		return rt;
 	}
-	
-	public FriendMessageItems getFriendMessageListByFayId(String sessionId, long fayId)
-			throws MalformedURLException, ProtocolException, IOException,
-			ApiException {
+
+	public FriendMessageItems getFriendMessageListByFayId(String sessionId,
+			long fayId) throws MalformedURLException, ProtocolException,
+			IOException, ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
 				appSecret, uri + "/friend/getFriendMessageListByFayId."
 						+ FormatType.json);
@@ -497,21 +528,20 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		FriendMessageItems rt = (FriendMessageItems) GsonUtil.fromJson(shr.getResult(),
-				FriendMessageItems.class);
+		FriendMessageItems rt = (FriendMessageItems) GsonUtil.fromJson(
+				shr.getResult(), FriendMessageItems.class);
 		if (rt != null && rt.getErrCode() != null) {
 			throw new ApiException(rt.getErrCode(), rt.getErrDesc(),
 					rt.getErrNotice());
 		}
 		return rt;
 	}
-		
+
 	public Result delFriendById(String sessionId, long friendId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
-				appSecret, uri + "/friend/delFriendById."
-						+ FormatType.json);
+				appSecret, uri + "/friend/delFriendById." + FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
@@ -522,21 +552,19 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		Result rt = (Result) GsonUtil.fromJson(shr.getResult(),
-				Result.class);
+		Result rt = (Result) GsonUtil.fromJson(shr.getResult(), Result.class);
 		if (rt != null && rt.getErrCode() != null) {
 			throw new ApiException(rt.getErrCode(), rt.getErrDesc(),
 					rt.getErrNotice());
 		}
 		return rt;
 	}
-	
+
 	public StringResult isFriend(String sessionId, long aUserId, long bUserId)
 			throws MalformedURLException, ProtocolException, IOException,
 			ApiException {
 		HttpURLConnection conn = HttpUtil.CreatePostHttpConnection(appKey,
-				appSecret, uri + "/friend/isFriend."
-						+ FormatType.json);
+				appSecret, uri + "/friend/isFriend." + FormatType.json);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("sessionId=").append(URLEncoder.encode(sessionId, UTF8));
