@@ -258,7 +258,7 @@ public class ClientAccount {
 		if (shr.getHttpCode() != 200) {
 			throw new ApiException(General.GEN_004.getErrCode(), "网络异常");
 		}
-		Result result = (StringResult) GsonUtil.fromJson(shr.getResult(),
+		Result result = (Result) GsonUtil.fromJson(shr.getResult(),
 				Result.class);
 		if (result != null && result.getErrCode() != null) {
 			throw new ApiException(result.getErrCode(), result.getErrDesc(),
