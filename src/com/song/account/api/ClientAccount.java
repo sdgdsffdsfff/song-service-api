@@ -25,7 +25,6 @@ import com.song.commons.service.General;
 public class ClientAccount {
 
 	private static final String UTF8 = "utf-8";
-
 	private static ClientAccount mInstance;
 
 	private String uri;
